@@ -3,6 +3,8 @@
 [![Website](https://img.shields.io/badge/Website-solvercf.com-orange.svg)](https://solvercf.com/)
 [![Documentation](https://img.shields.io/badge/Docs-API%20Reference-blue.svg)](https://solvercf.com/docs/overview)
 [![Telegram](https://img.shields.io/badge/Telegram-Community-0088cc.svg)](https://t.me/solvercf_group)
+[![YouTube](https://img.shields.io/badge/YouTube-@solvercf-red.svg?logo=youtube)](https://www.youtube.com/@solvercf)
+[![X (Twitter)](https://img.shields.io/badge/X-@solvercf-black.svg?logo=x)](https://x.com/solvercf)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Official multi-language examples and quickstart guides for **[SolverCF](https://solvercf.com)** — the AI-powered Cloudflare Captcha Bypass and Anti-Bot resolution service.
@@ -51,7 +53,6 @@ Copy `config.example.json` to `config.json` in the root directory and replace `Y
 | **Golang** | [`golang/`](./golang) | High-throughput concurrent crawler examples |
 | **PHP** | [`php/`](./php) | cURL-based implementation for standard backend systems |
 | **cURL / Shell** | [`curl/`](./curl) | Command-line scripts to test Turnstile & reCAPTCHA v3 solving and verify |
-| **Verify Specs** | [`verify/`](./verify) | Reference requests and responses for demo endpoints |
 
 ---
 
@@ -72,5 +73,7 @@ All SolverCF captcha solving follows a simple 3-step lifecycle:
 ## 🔗 Official Resources
 - **Website**: [https://solvercf.com](https://solvercf.com)
 - **API Documentation**: [https://solvercf.com/docs/overview](https://solvercf.com/docs/overview)
+- **YouTube**: [@solvercf](https://www.youtube.com/@solvercf)
+- **X (Twitter)**: [@solvercf](https://x.com/solvercf)
 - **Telegram Group**: [@solvercf_group](https://t.me/solvercf_group)
 - **Telegram Support**: [@solvercf](https://t.me/solvercf)
