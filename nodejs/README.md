@@ -3,7 +3,7 @@
 Lightweight, modern Node.js examples using native `fetch` (Node.js 18+ required, zero external dependencies).
 
 ### Configuration
-1. Copy `config.example.json` in the root folder to `config.json` and enter your API key:
+1. Open `config.json` in the root folder and enter your API key:
    ```json
    {
      "clientKey": "YOUR_ACTUAL_API_KEY"

@@ -1,8 +1,7 @@
-# Environments & Local Config
+# Environments
 .env
 .env.local
 *.env
-config.json
 
 # Python & Java
 __pycache__/

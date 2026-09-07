@@ -9,7 +9,7 @@ pip install -r requirements.txt
 
 ### Configuration
 You can provide your API key in either of two ways:
-1. Copy `config.example.json` in the root folder to `config.json` and set `"clientKey"`:
+1. Open `config.json` in the root folder and set `"clientKey"`:
    ```json
    {
      "clientKey": "YOUR_ACTUAL_API_KEY"

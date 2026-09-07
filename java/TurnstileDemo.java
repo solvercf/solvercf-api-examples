@@ -52,7 +52,6 @@ public class TurnstileDemo {
 
         String configPath = new File("config.json").exists() ? "config.json"
                 : new File("../config.json").exists() ? "../config.json"
-                : new File("../config.example.json").exists() ? "../config.example.json"
                 : "config.json";
 
         String configContent = Files.exists(Path.of(configPath)) ? Files.readString(Path.of(configPath)) : "";
@@ -75,7 +74,14 @@ public class TurnstileDemo {
         }
 
         System.out.println("\n[1/3] 📝 Creating Turnstile task...");
-        String createRes = createTask(clientKey, websiteUrl, websiteKey);
+        String createRes;
+        try {
+            createRes = createTask(clientKey, websiteUrl, websiteKey);
+        } catch (Exception e) {
+            System.out.printf("      [x] Network error calling createTask: %s\n", e.getMessage());
+            return;
+        }
+
         Integer errorId = extractInt(createRes, "errorId");
         if (errorId != null && errorId != 0) {
             String errorCode = extractString(createRes, "errorCode");
@@ -148,14 +154,23 @@ public class TurnstileDemo {
             verifyBuilder.header("User-Agent", userAgent);
         }
 
-        HttpResponse<String> verifyResponse = client.send(verifyBuilder.build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> verifyResponse;
+        try {
+            verifyResponse = client.send(verifyBuilder.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            System.out.printf("      [x] Network error during verification: %s\n", e.getMessage());
+            return;
+        }
+
         String verifyBody = verifyResponse.body();
 
         System.out.println("\nVerify Response:");
         System.out.println(verifyBody);
 
+        String unescapedBody = verifyBody.replace("\\\"", "\"").replace("\\n", "\n").replace("\\\\", "\\");
         System.out.println("-".repeat(60));
-        if (verifyBody.contains("\"success\":true") || verifyBody.contains("\"success\": true")) {
+        if (verifyBody.contains("\"success\":true") || verifyBody.contains("\"success\": true") ||
+            unescapedBody.contains("\"success\":true") || unescapedBody.contains("\"success\": true")) {
             System.out.println("[🎉 SUCCESS] Cloudflare Turnstile verified successfully!");
         } else {
             System.out.println("[x] Verification failed.");

@@ -1,5 +1,5 @@
 <?php
-$configPath = file_exists(__DIR__ . '/../config.json') ? __DIR__ . '/../config.json' : __DIR__ . '/../config.example.json';
+$configPath = __DIR__ . '/../config.json';
 $config = file_exists($configPath) ? json_decode(file_get_contents($configPath), true) : [];
 
 $clientKey = getenv('SOLVERCF_CLIENT_KEY') ?: getenv('SOLVERCF_API_KEY') ?: ($config['clientKey'] ?? $config['apiKey'] ?? '');

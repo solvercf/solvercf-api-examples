@@ -16,7 +16,7 @@ Solve **Cloudflare Turnstile**, **Cloudflare 5s / Managed Challenges**, and **Go
 ## ⚡ Quick Start
 
 ### 1. Configure `config.json`
-Copy `config.example.json` to `config.json` in the root directory and replace `YOUR_API_KEY_HERE` with your API Key (or export `SOLVERCF_API_KEY="YOUR_KEY"` as an environment variable):
+Open `config.json` in the root directory and replace `YOUR_API_KEY_HERE` with your API Key (or export `SOLVERCF_API_KEY="YOUR_KEY"` as an environment variable):
 
 ```json
 {

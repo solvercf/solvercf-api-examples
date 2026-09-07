@@ -5,9 +5,6 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_FILE="$SCRIPT_DIR/../config.json"
-if [ ! -f "$CONFIG_FILE" ]; then
-  CONFIG_FILE="$SCRIPT_DIR/../config.example.json"
-fi
 
 API_KEY="${SOLVERCF_CLIENT_KEY:-${SOLVERCF_API_KEY:-}}"
 if [ -z "$API_KEY" ] && [ -f "$CONFIG_FILE" ]; then
@@ -74,7 +71,7 @@ CREATE_RES=$(curl -s --max-time 30 -X POST https://solvercf.com/token/extension/
     }
   }')
 
-TASK_ID=$(echo "$CREATE_RES" | grep -o '"taskId":"[^"]*' | cut -d'"' -f4)
+TASK_ID=$(echo "$CREATE_RES" | grep -o '"taskId"[ :]*"[^"]*"' | head -1 | cut -d'"' -f4)
 
 if [ -z "$TASK_ID" ]; then
   echo "      [x] Failed to create task: $CREATE_RES"
@@ -97,12 +94,12 @@ for attempt in {1..60}; do
       "taskId": "'"$TASK_ID"'"
     }')
 
-  STATUS=$(echo "$RESULT_RES" | grep -o '"status":"[^"]*' | cut -d'"' -f4)
+  STATUS=$(echo "$RESULT_RES" | grep -o '"status"[ :]*"[^"]*"' | head -1 | cut -d'"' -f4)
 
   if [ "$STATUS" == "ready" ]; then
-    TOKEN=$(echo "$RESULT_RES" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
-    USER_AGENT=$(echo "$RESULT_RES" | grep -o '"userAgent":"[^"]*' | cut -d'"' -f4)
-    COST=$(echo "$RESULT_RES" | grep -o '"cost":[0-9.]*' | cut -d':' -f2)
+    TOKEN=$(echo "$RESULT_RES" | grep -o '"token"[ :]*"[^"]*"' | head -1 | cut -d'"' -f4)
+    USER_AGENT=$(echo "$RESULT_RES" | grep -o '"userAgent"[ :]*"[^"]*"' | head -1 | cut -d'"' -f4)
+    COST=$(echo "$RESULT_RES" | grep -o '"cost"[ :]*[0-9.]*' | head -1 | cut -d':' -f2 | tr -d ' ')
     echo "      [✓] Solved successfully! | Cost: \$$COST"
     break
   elif [ "$STATUS" == "failed" ] || [ "$STATUS" == "expired" ]; then
@@ -139,12 +136,16 @@ echo ""
 echo "Verify Response:"
 echo "$VERIFY_RES"
 
-SCORE=$(echo "$VERIFY_RES" | grep -o '"score": *[0-9.]*' | cut -d':' -f2 | tr -d ' ')
+SCORE=$(echo "$VERIFY_RES" | grep -o '"score"[ :]*[0-9.]*' | head -1 | cut -d':' -f2 | tr -d ' ')
 
 echo "------------------------------------------------------------"
-if echo "$VERIFY_RES" | grep -q '"success":true'; then
-  echo "[🎉 SUCCESS] reCAPTCHA v3 verified successfully! (Score: $SCORE)"
-  echo "[📊 Result] Score: $SCORE | Action: $PAGE_ACTION"
+if echo "$VERIFY_RES" | grep -Eq '"success"[ :]*true'; then
+  SCORE_TEXT=""
+  if [ -n "$SCORE" ]; then
+    SCORE_TEXT=" (Score: $SCORE)"
+  fi
+  echo "[🎉 SUCCESS] reCAPTCHA v3 verified successfully!$SCORE_TEXT"
+  echo "[📊 Result] Score: ${SCORE:-unknown} | Action: $PAGE_ACTION"
 else
   echo "[x] Verification failed."
 fi

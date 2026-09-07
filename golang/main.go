@@ -36,7 +36,6 @@ func loadConfig() (*Config, error) {
 	paths := []string{
 		"config.json",
 		filepath.Join("..", "config.json"),
-		filepath.Join("..", "config.example.json"),
 	}
 
 	var data []byte
@@ -47,7 +46,7 @@ func loadConfig() (*Config, error) {
 		}
 	}
 	if len(data) == 0 {
-		return nil, fmt.Errorf("neither config.json nor config.example.json found")
+		return nil, fmt.Errorf("config.json not found")
 	}
 
 	var cfg Config
@@ -346,6 +345,19 @@ func runRecaptchaV3Demo(clientKey string, cfg *Config) {
 			if h, ok := rawObj["hostname"].(string); ok {
 				host = h
 			}
+		}
+	} else if rawObj, ok := formatted["rawJson"].(map[string]interface{}); ok {
+		score = rawObj["score"]
+		if h, ok := rawObj["hostname"].(string); ok {
+			host = h
+		}
+	}
+	if score == nil {
+		score = formatted["score"]
+	}
+	if host == "" {
+		if h, ok := formatted["hostname"].(string); ok {
+			host = h
 		}
 	}
 

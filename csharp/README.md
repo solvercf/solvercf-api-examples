@@ -3,7 +3,7 @@
 Integration examples for **Cloudflare Turnstile** and **Google reCAPTCHA v3** using modern `HttpClient` (.NET 8+).
 
 ### Configuration
-1. Copy `config.example.json` in the root folder to `config.json` and set your API key:
+1. Open `config.json` in the root folder and set your API key:
    ```json
    {
      "clientKey": "YOUR_ACTUAL_API_KEY"

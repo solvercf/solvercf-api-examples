@@ -4,12 +4,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Load configuration from config.json or fallback to config.example.json
-let configPath = path.join(__dirname, '..', 'config.json');
-if (!fs.existsSync(configPath)) {
-  configPath = path.join(__dirname, '..', 'config.example.json');
-}
-
+// Load configuration from config.json
+const configPath = path.join(__dirname, '..', 'config.json');
 const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 // Priority: Environment variable -> config.json

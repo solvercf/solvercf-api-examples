@@ -52,7 +52,6 @@ public class RecaptchaV3Demo {
 
         String configPath = new File("config.json").exists() ? "config.json"
                 : new File("../config.json").exists() ? "../config.json"
-                : new File("../config.example.json").exists() ? "../config.example.json"
                 : "config.json";
 
         String configContent = Files.exists(Path.of(configPath)) ? Files.readString(Path.of(configPath)) : "";
@@ -77,7 +76,14 @@ public class RecaptchaV3Demo {
         }
 
         System.out.println("\n[1/3] 📝 Creating reCAPTCHA v3 task...");
-        String createRes = createTask(clientKey, websiteUrl, websiteKey, pageAction);
+        String createRes;
+        try {
+            createRes = createTask(clientKey, websiteUrl, websiteKey, pageAction);
+        } catch (Exception e) {
+            System.out.printf("      [x] Network error calling createTask: %s\n", e.getMessage());
+            return;
+        }
+
         Integer errorId = extractInt(createRes, "errorId");
         if (errorId != null && errorId != 0) {
             String errorCode = extractString(createRes, "errorCode");
@@ -150,7 +156,14 @@ public class RecaptchaV3Demo {
             verifyBuilder.header("User-Agent", userAgent);
         }
 
-        HttpResponse<String> verifyResponse = client.send(verifyBuilder.build(), HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> verifyResponse;
+        try {
+            verifyResponse = client.send(verifyBuilder.build(), HttpResponse.BodyHandlers.ofString());
+        } catch (Exception e) {
+            System.out.printf("      [x] Network error during verification: %s\n", e.getMessage());
+            return;
+        }
+
         String verifyBody = verifyResponse.body();
 
         System.out.println("\nVerify Response:");
@@ -161,7 +174,8 @@ public class RecaptchaV3Demo {
         String host = extractString(unescapedBody, "hostname");
 
         System.out.println("-".repeat(60));
-        if (verifyBody.contains("\"success\":true") || verifyBody.contains("\"success\": true")) {
+        if (verifyBody.contains("\"success\":true") || verifyBody.contains("\"success\": true") ||
+            unescapedBody.contains("\"success\":true") || unescapedBody.contains("\"success\": true")) {
             String scoreText = score != null ? String.format(" (Score: %s)", score) : "";
             System.out.printf("[🎉 SUCCESS] reCAPTCHA v3 verified successfully!%s\n", scoreText);
             if (score != null || host != null) {

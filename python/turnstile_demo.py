@@ -3,11 +3,8 @@ import time
 import json
 import requests
 
-# Load configuration from config.json or fallback to config.example.json
+# Load configuration from config.json
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config.json")
-if not os.path.isfile(CONFIG_PATH):
-    CONFIG_PATH = os.path.join(os.path.dirname(__file__), "..", "config.example.json")
-
 with open(CONFIG_PATH, "r", encoding="utf-8") as f:
     config = json.load(f)
 

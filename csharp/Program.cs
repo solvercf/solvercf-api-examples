@@ -39,12 +39,11 @@ class Program
 
         string configPath = File.Exists("config.json") ? "config.json"
             : File.Exists(Path.Combine("..", "config.json")) ? Path.Combine("..", "config.json")
-            : File.Exists(Path.Combine("..", "config.example.json")) ? Path.Combine("..", "config.example.json")
             : "config.json";
 
         if (!File.Exists(configPath))
         {
-            Console.WriteLine("[!] Error: Neither config.json nor config.example.json found!");
+            Console.WriteLine("[!] Error: config.json not found!");
             return;
         }
 
@@ -220,7 +219,7 @@ class Program
         PrintFormattedJson(verifyText);
 
         Console.WriteLine(new string('-', 60));
-        if (verifyRes.IsSuccessStatusCode && verifyText.Contains("\"success\":true"))
+        if (verifyRes.IsSuccessStatusCode && (verifyText.Contains("\"success\":true") || verifyText.Contains("\"success\": true")))
         {
             Console.WriteLine("[🎉 SUCCESS] Cloudflare Turnstile verified successfully!");
         }
@@ -380,17 +379,24 @@ class Program
         try
         {
             using var doc = JsonDocument.Parse(verifyText);
-            if (doc.RootElement.TryGetProperty("rawJson", out var rawEl))
+            if (doc.RootElement.TryGetProperty("rawJson", out var rawEl) && rawEl.ValueKind == JsonValueKind.String)
             {
                 using var rawDoc = JsonDocument.Parse(rawEl.GetString()!);
                 if (rawDoc.RootElement.TryGetProperty("score", out var s)) score = s.GetDouble();
                 if (rawDoc.RootElement.TryGetProperty("hostname", out var h)) host = h.GetString();
             }
+            else if (doc.RootElement.TryGetProperty("rawJson", out var rawObjEl) && rawObjEl.ValueKind == JsonValueKind.Object)
+            {
+                if (rawObjEl.TryGetProperty("score", out var s)) score = s.GetDouble();
+                if (rawObjEl.TryGetProperty("hostname", out var h)) host = h.GetString();
+            }
+            if (!score.HasValue && doc.RootElement.TryGetProperty("score", out var directScore)) score = directScore.GetDouble();
+            if (string.IsNullOrEmpty(host) && doc.RootElement.TryGetProperty("hostname", out var directHost)) host = directHost.GetString();
         }
         catch { }
 
         Console.WriteLine(new string('-', 60));
-        if (verifyRes.IsSuccessStatusCode && verifyText.Contains("\"success\":true"))
+        if (verifyRes.IsSuccessStatusCode && (verifyText.Contains("\"success\":true") || verifyText.Contains("\"success\": true")))
         {
             string scoreText = score.HasValue ? $" (Score: {score})" : "";
             Console.WriteLine($"[🎉 SUCCESS] reCAPTCHA v3 verified successfully!{scoreText}");
