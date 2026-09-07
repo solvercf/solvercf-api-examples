@@ -1,0 +1,14 @@
+{
+  "clientKey": "YOUR_API_KEY_HERE",
+  "turnstile": {
+    "websiteUrl": "https://solvercf.com/demo/cloudflare-turnstile",
+    "websiteKey": "0x4AAAAAAB__YGWiObopXheP",
+    "verifyUrl": "https://solvercf.com/token/demo/verify-turnstile"
+  },
+  "recaptchaV3": {
+    "websiteUrl": "https://solvercf.com/demo/recaptchav3",
+    "websiteKey": "6LeSYmUtAAAAADy78hcvyfvGXqWKqN4aaFs2vyG8",
+    "pageAction": "demo_page",
+    "verifyUrl": "https://solvercf.com/token/demo/verify-recaptcha"
+  }
+}

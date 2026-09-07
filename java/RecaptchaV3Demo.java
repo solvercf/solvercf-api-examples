@@ -1,0 +1,210 @@
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class RecaptchaV3Demo {
+    private static final String API_BASE_URL = "https://solvercf.com/token/extension";
+    private static final HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(15))
+            .build();
+
+    public static String createTask(String clientKey, String websiteUrl, String websiteKey, String pageAction) throws IOException, InterruptedException {
+        String payload = String.format("{\"clientKey\":\"%s\",\"task\":{\"type\":\"RecaptchaV3TaskProxyless\",\"websiteUrl\":\"%s\",\"websiteKey\":\"%s\",\"pageAction\":\"%s\"}}",
+                escapeJson(clientKey), escapeJson(websiteUrl), escapeJson(websiteKey), escapeJson(pageAction));
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_BASE_URL + "/createTask"))
+                .header("Content-Type", "application/json; charset=utf-8")
+                .timeout(Duration.ofSeconds(30))
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
+    public static String getTaskResult(String clientKey, String taskId) throws IOException, InterruptedException {
+        String payload = String.format("{\"clientKey\":\"%s\",\"taskId\":\"%s\"}", escapeJson(clientKey), escapeJson(taskId));
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(API_BASE_URL + "/getTaskResult"))
+                .header("Content-Type", "application/json; charset=utf-8")
+                .timeout(Duration.ofSeconds(15))
+                .POST(HttpRequest.BodyPublishers.ofString(payload))
+                .build();
+
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        return response.body();
+    }
+
+    public static void main(String[] args) throws Exception {
+        System.out.println("=".repeat(60));
+        System.out.println("  🚀 SolverCF API - Google reCAPTCHA v3 Demo (Java)");
+        System.out.println("=".repeat(60));
+
+        String configPath = new File("config.json").exists() ? "config.json"
+                : new File("../config.json").exists() ? "../config.json"
+                : new File("../config.example.json").exists() ? "../config.example.json"
+                : "config.json";
+
+        String configContent = Files.exists(Path.of(configPath)) ? Files.readString(Path.of(configPath)) : "";
+
+        String envKey = System.getenv("SOLVERCF_CLIENT_KEY");
+        if (envKey == null) envKey = System.getenv("SOLVERCF_API_KEY");
+        String clientKey = envKey != null ? envKey : extractString(configContent, "clientKey");
+        if (clientKey == null) clientKey = extractString(configContent, "apiKey");
+
+        String websiteUrl = extractNestedString(configContent, "recaptchaV3", "websiteUrl");
+        if (websiteUrl == null) websiteUrl = "https://solvercf.com/demo/recaptchav3";
+        String websiteKey = extractNestedString(configContent, "recaptchaV3", "websiteKey");
+        if (websiteKey == null) websiteKey = "6LeSYmUtAAAAADy78hcvyfvGXqWKqN4aaFs2vyG8";
+        String pageAction = extractNestedString(configContent, "recaptchaV3", "pageAction");
+        if (pageAction == null) pageAction = "demo_page";
+        String verifyUrl = extractNestedString(configContent, "recaptchaV3", "verifyUrl");
+        if (verifyUrl == null) verifyUrl = "https://solvercf.com/token/demo/verify-recaptcha";
+
+        if (clientKey == null || clientKey.isBlank() || clientKey.equals("YOUR_API_KEY_HERE")) {
+            System.out.println("[!] Error: Please set your clientKey in config.json or export SOLVERCF_API_KEY.");
+            return;
+        }
+
+        System.out.println("\n[1/3] 📝 Creating reCAPTCHA v3 task...");
+        String createRes = createTask(clientKey, websiteUrl, websiteKey, pageAction);
+        Integer errorId = extractInt(createRes, "errorId");
+        if (errorId != null && errorId != 0) {
+            String errorCode = extractString(createRes, "errorCode");
+            String errorDesc = extractString(createRes, "errorDescription");
+            System.out.printf("      [x] Create task failed (Code: %s): %s\n", errorCode, errorDesc);
+            return;
+        }
+
+        String taskId = extractString(createRes, "taskId");
+        System.out.printf("      [✓] Task ID: %s\n", taskId);
+
+        System.out.println("\n[2/3] ⏳ Polling result every 1.5s...");
+        String token = null;
+        String userAgent = null;
+        long startTime = System.currentTimeMillis();
+        int attempt = 0;
+
+        while ((System.currentTimeMillis() - startTime) < 90000) {
+            Thread.sleep(1500);
+            attempt++;
+            double elapsed = Math.round((System.currentTimeMillis() - startTime) / 100.0) / 10.0;
+
+            String resultRes;
+            try {
+                resultRes = getTaskResult(clientKey, taskId);
+            } catch (Exception e) {
+                System.out.printf("      ➜ [#%d] Polling warning: %s\n", attempt, e.getMessage());
+                continue;
+            }
+
+            Integer pollErrId = extractInt(resultRes, "errorId");
+            if (pollErrId != null && pollErrId != 0) {
+                System.out.printf("      [x] Polling error: %s\n", resultRes);
+                return;
+            }
+
+            String status = extractString(resultRes, "status");
+            if ("ready".equals(status)) {
+                token = extractString(resultRes, "token");
+                userAgent = extractString(resultRes, "userAgent");
+                double totalTime = Math.round((System.currentTimeMillis() - startTime) / 10.0) / 100.0;
+                Double cost = extractDouble(resultRes, "cost");
+                System.out.printf("      [✓] Solved in %.2fs | Cost: $%s\n", totalTime, cost != null ? cost : 0.0);
+                break;
+            } else if ("failed".equals(status) || "expired".equals(status)) {
+                System.out.printf("      [x] Task ended with status: %s\n", status);
+                return;
+            } else {
+                System.out.printf("      ➜ [#%d] Status: %s (%.1fs elapsed)...\n", attempt, status, elapsed);
+            }
+        }
+
+        if (token == null) {
+            System.out.println("      [x] Timeout waiting for token.");
+            return;
+        }
+
+        String tokenPreview = token.length() > 50 ? token.substring(0, 40) + "..." + token.substring(token.length() - 10) : token;
+        System.out.printf("      [✓] Token: %s\n", tokenPreview);
+
+        System.out.println("\n[3/3] 📡 Submitting token to verification endpoint...");
+        HttpRequest.Builder verifyBuilder = HttpRequest.newBuilder()
+                .uri(URI.create(verifyUrl))
+                .header("Content-Type", "application/json; charset=utf-8")
+                .header("Referer", websiteUrl)
+                .timeout(Duration.ofSeconds(30))
+                .POST(HttpRequest.BodyPublishers.ofString(String.format("{\"token\":\"%s\"}", escapeJson(token))));
+
+        if (userAgent != null && !userAgent.isBlank()) {
+            verifyBuilder.header("User-Agent", userAgent);
+        }
+
+        HttpResponse<String> verifyResponse = client.send(verifyBuilder.build(), HttpResponse.BodyHandlers.ofString());
+        String verifyBody = verifyResponse.body();
+
+        System.out.println("\nVerify Response:");
+        System.out.println(verifyBody);
+
+        String unescapedBody = verifyBody.replace("\\\"", "\"").replace("\\n", "\n").replace("\\\\", "\\");
+        Double score = extractDouble(unescapedBody, "score");
+        String host = extractString(unescapedBody, "hostname");
+
+        System.out.println("-".repeat(60));
+        if (verifyBody.contains("\"success\":true") || verifyBody.contains("\"success\": true")) {
+            String scoreText = score != null ? String.format(" (Score: %s)", score) : "";
+            System.out.printf("[🎉 SUCCESS] reCAPTCHA v3 verified successfully!%s\n", scoreText);
+            if (score != null || host != null) {
+                System.out.printf("[📊 Result] Score: %s | Action: %s | Host: %s\n", score, pageAction, host);
+            }
+        } else {
+            System.out.println("[x] Verification failed.");
+        }
+        System.out.println("=".repeat(60));
+    }
+
+    private static String escapeJson(String s) {
+        return s == null ? "" : s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private static String extractString(String json, String key) {
+        if (json == null) return null;
+        Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*\"([^\"]+)\"");
+        Matcher m = p.matcher(json);
+        return m.find() ? m.group(1) : null;
+    }
+
+    private static Integer extractInt(String json, String key) {
+        if (json == null) return null;
+        Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*([0-9]+)");
+        Matcher m = p.matcher(json);
+        return m.find() ? Integer.parseInt(m.group(1)) : null;
+    }
+
+    private static Double extractDouble(String json, String key) {
+        if (json == null) return null;
+        Pattern p = Pattern.compile("\"" + Pattern.quote(key) + "\"\\s*:\\s*([0-9.]+)");
+        Matcher m = p.matcher(json);
+        return m.find() ? Double.parseDouble(m.group(1)) : null;
+    }
+
+    private static String extractNestedString(String json, String parentKey, String childKey) {
+        if (json == null) return null;
+        Pattern parentPattern = Pattern.compile("\"" + Pattern.quote(parentKey) + "\"\\s*:\\s*\\{([^\\}]+)\\}");
+        Matcher parentMatcher = parentPattern.matcher(json);
+        if (parentMatcher.find()) {
+            return extractString(parentMatcher.group(1), childKey);
+        }
+        return null;
+    }
+}

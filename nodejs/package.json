@@ -1,0 +1,21 @@
+{
+  "name": "solvercf-nodejs-examples",
+  "version": "1.0.0",
+  "description": "SolverCF API integration examples for Node.js",
+  "main": "turnstile_demo.js",
+  "type": "module",
+  "scripts": {
+    "start": "node turnstile_demo.js",
+    "turnstile": "node turnstile_demo.js",
+    "recaptcha": "node recaptcha_v3_demo.js"
+  },
+  "keywords": [
+    "solvercf",
+    "cloudflare",
+    "turnstile",
+    "recaptcha",
+    "captcha",
+    "bypass"
+  ],
+  "license": "MIT"
+}
